@@ -1,0 +1,17 @@
+{
+    "name": "1lost/test-ecommerce",
+    "autoload": {
+        "psr-4": {
+            "1lost\\TestEcommerce\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "pavelolofinskiy",
+            "email": "pavelolofinskiy@gmail.com"
+        }
+    ],
+    "require": {
+        "predis/predis": "^3.0"
+    }
+}
