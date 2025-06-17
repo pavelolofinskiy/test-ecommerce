@@ -202,7 +202,7 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = val.value;
-        checkbox.checked = val.active;
+        checkbox.checked = activeFilters[filter.slug]?.includes(val.value) ?? false;
         checkbox.dataset.slug = filter.slug;
 
         checkbox.addEventListener('change', (e) => {

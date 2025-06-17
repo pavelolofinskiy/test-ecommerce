@@ -5,14 +5,27 @@ use Src\Database\DB;
 use Src\Cache\RedisCache;
 use PDO;
 
+/**
+ * Контроллер API для получения продуктов и фильтров.
+ * Работает с базой данных и кешем Redis.
+ */
 class ApiController
 {
-    function getFiltersWithCounts(PDO $pdo, RedisCache $cache): array
+    /**
+     * Получает список фильтров с подсчетом количества товаров по каждому значению.
+     * Сначала пытается получить данные из Redis кеша, при отсутствии — из базы.
+     * Результат кешируется на 10 минут.
+     *
+     * @param PDO $pdo Объект PDO для работы с базой данных.
+     * @param RedisCache $cache Объект кеша Redis.
+     * @return array Массив фильтров с параметрами и количеством товаров.
+     */
+    public function getFiltersWithCounts(PDO $pdo, RedisCache $cache): array
     {
         $cacheKey = 'filters_with_counts';
 
         $filters = $cache->get($cacheKey);
-        if ($filters !== null) {
+        if ($filters !== null) { 
             return $filters;
         }
 
@@ -47,11 +60,23 @@ class ApiController
             }
         }
 
-        $cache->set($cacheKey, $filters, 600); // 10 минут кеша
+        $cache->set($cacheKey, $filters, 600); // кеш на 600 секунд (10 минут)
 
         return $filters;
     }
 
+    /**
+     * Возвращает JSON с товарами с учётом пагинации, сортировки и фильтров.
+     * Принимает параметры через GET:
+     * - page (int) - номер страницы, по умолчанию 1
+     * - limit (int) - количество товаров на странице, по умолчанию 10
+     * - sort_by (string) - сортировка: price_asc, price_desc, по умолчанию по id
+     * - filter (array) - фильтры в формате slug => [значения]
+     *
+     * Выводит JSON с товарами и мета-данными пагинации.
+     *
+     * @return void
+     */
     public function getProducts(): void
     {
         header('Content-Type: application/json');
@@ -123,6 +148,13 @@ class ApiController
         ]);
     }
 
+    /**
+     * Возвращает JSON с фильтрами и подсчетами товаров.
+     *
+     * Использует внутренний метод getFiltersWithCounts для получения данных.
+     *
+     * @return void
+     */
     public function getFilters(): void
     {
         header('Content-Type: application/json');
