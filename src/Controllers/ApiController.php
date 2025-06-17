@@ -80,34 +80,27 @@ class ApiController
         $params = [];
 
         foreach ($filters as $slug => $values) {
+            $joinCount++;
+            $alias = "pp{$joinCount}";
+
             if (!is_array($values)) {
                 $values = [$values];
             }
 
-            $aliasPp = "pp{$joinCount}";
-            $aliasPv = "pv{$joinCount}";
-            $aliasPa = "pa{$joinCount}";
-
             $placeholders = implode(',', array_fill(0, count($values), '?'));
-            $params = array_merge($params, $values);
 
-            $where = "{$aliasPv}.value IN ($placeholders)";
+            // ✅ Сначала slug, потом значения
+            $params[] = $slug;
+            $params = array_merge($params, $values);
 
             $whereParts[] = [
                 'join' => "
-                    JOIN product_parameters {$aliasPp} ON p.id = {$aliasPp}.product_id
-                    JOIN parameter_values {$aliasPv} ON {$aliasPv}.id = {$aliasPp}.parameter_value_id
-                    JOIN parameters {$aliasPa} ON {$aliasPa}.id = {$aliasPv}.parameter_id AND {$aliasPa}.slug = ?
+                    JOIN product_parameters {$alias} ON p.id = {$alias}.product_id
+                    JOIN parameter_values pv{$joinCount} ON pv{$joinCount}.id = {$alias}.parameter_value_id
+                    JOIN parameters pa{$joinCount} ON pa{$joinCount}.id = pv{$joinCount}.parameter_id AND pa{$joinCount}.slug = ?
                 ",
-                'slug' => $slug,
-                'condition' => $where
+                'condition' => "pv{$joinCount}.value IN ($placeholders)"
             ];
-
-            $joinCount++;
-        }
-
-        foreach ($whereParts as $part) {
-            $params[] = $part['slug'];
         }
 
         $joins = '';
