@@ -17,15 +17,15 @@ class RedisCache
      *
      * @throws Exception Если не удается подключиться к Redis.
      */
-    public function __construct()
+    public function __construct(?Redis $redis = null)
     {
-        $this->redis = new Redis();
-
-        $connected = $this->redis->connect('127.0.0.1', 6379);
-
-        if (!$connected) {
+        if ($redis === null) {
+            $redis = new Redis();
+        }
+        if (!$redis->connect('127.127.126.64', 6379)) {
             throw new Exception('Cannot connect to Redis');
         }
+        $this->redis = $redis;
     }
 
     /**
@@ -49,7 +49,7 @@ class RedisCache
     public function get(string $key)
     {
         $data = $this->redis->get($key);
-
+            
         return $data === false ? null : unserialize($data);
     }
 

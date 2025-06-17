@@ -1,7 +1,7 @@
 <?php
 return [
-    'host' => '127.0.0.1',
+    'host' => '127.127.126.30',
     'dbname' => 'ecommerce-test',
     'user' => 'root',
-    'pass' => 'root'
+    'pass' => ''
 ];

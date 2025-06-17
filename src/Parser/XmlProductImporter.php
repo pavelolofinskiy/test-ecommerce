@@ -13,14 +13,17 @@ use Src\Cache\RedisCache;
 class XmlProductImporter
 {
     private PDO $pdo;
+    private RedisCache $cache;
 
     /**
      * Подключение к базе данных через PDO.
      */
-    public function __construct()
+    public function __construct(?PDO $pdo = null, ?RedisCache $cache = null)
     {
-        $this->pdo = DB::connect();
+        $this->pdo = $pdo ?? DB::connect();
+        $this->cache = $cache ?? new RedisCache();
     }
+  
 
     /**
      * Импортирует товары из XML файла.
@@ -80,8 +83,7 @@ class XmlProductImporter
         }
 
         // Очистка кеша фильтров в Redis
-        $cache = new RedisCache();
-        $cache->delete('filters_with_counts');
+        $this->cache->delete('filters_with_counts');
 
         echo "Import completed successfully.\n";
     }
