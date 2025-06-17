@@ -6,7 +6,6 @@ use Src\Cache\RedisCache;
 use PDO;
 
 class ApiController
-
 {
     function getFiltersWithCounts(PDO $pdo, RedisCache $cache): array
     {
@@ -17,22 +16,18 @@ class ApiController
             return $filters;
         }
 
-        // Если кеша нет — считаем из базы
         $filters = [];
 
-        // Получаем все параметры
         $stmtParams = $pdo->query("SELECT id, name, slug FROM parameters");
         $parameters = $stmtParams->fetchAll();
 
         foreach ($parameters as $param) {
             $filters[$param['slug']] = [
                 'name' => $param['name'],
-                'values' => []
+                'values' => [],
+                'slug' => $param['slug']
             ];
 
-            $filters[$param['slug']]['slug'] = $param['slug'];
-
-            // Для каждого параметра получаем значения и количество товаров
             $stmtValues = $pdo->prepare("
                 SELECT pv.value, COUNT(pp.product_id) AS product_count
                 FROM parameter_values pv
@@ -52,11 +47,10 @@ class ApiController
             }
         }
 
-        $cache->set($cacheKey, $filters, 600); // кеш 10 минут
+        $cache->set($cacheKey, $filters, 600); // 10 минут кеша
 
         return $filters;
     }
-
 
     public function getProducts(): void
     {
@@ -68,66 +62,49 @@ class ApiController
         $offset = ($page - 1) * $limit;
 
         $sort = $_GET['sort_by'] ?? null;
-        $orderBy = 'p.id ASC';
+        $orderBy = 'p_outer.id ASC';
 
-        if ($sort === 'price_asc') $orderBy = 'p.price ASC';
-        if ($sort === 'price_desc') $orderBy = 'p.price DESC';
+        if ($sort === 'price_asc') $orderBy = 'p_outer.price ASC';
+        if ($sort === 'price_desc') $orderBy = 'p_outer.price DESC';
 
-        // Фильтры: filter[brand]=HP или filter[color][]=Black
         $filters = $_GET['filter'] ?? [];
         $whereParts = [];
-        $joinCount = 0;
         $params = [];
 
         foreach ($filters as $slug => $values) {
-            $joinCount++;
-            $alias = "pp{$joinCount}";
-
             if (!is_array($values)) {
                 $values = [$values];
             }
 
             $placeholders = implode(',', array_fill(0, count($values), '?'));
-
-            // ✅ Сначала slug, потом значения
             $params[] = $slug;
             $params = array_merge($params, $values);
 
-            $whereParts[] = [
-                'join' => "
-                    JOIN product_parameters {$alias} ON p.id = {$alias}.product_id
-                    JOIN parameter_values pv{$joinCount} ON pv{$joinCount}.id = {$alias}.parameter_value_id
-                    JOIN parameters pa{$joinCount} ON pa{$joinCount}.id = pv{$joinCount}.parameter_id AND pa{$joinCount}.slug = ?
-                ",
-                'condition' => "pv{$joinCount}.value IN ($placeholders)"
-            ];
+            $whereParts[] = "
+                EXISTS (
+                    SELECT 1 FROM product_parameters pp
+                    JOIN parameter_values pv ON pp.parameter_value_id = pv.id
+                    JOIN parameters pa ON pv.parameter_id = pa.id
+                    WHERE pp.product_id = p_outer.id
+                    AND pa.slug = ?
+                    AND pv.value IN ($placeholders)
+                )
+            ";
         }
 
-        $joins = '';
-        $wheres = [];
+        $whereSql = count($whereParts) ? 'WHERE ' . implode(' AND ', $whereParts) : '';
 
-        foreach ($whereParts as $i => $part) {
-            $joins .= $part['join'] . "\n";
-            $wheres[] = $part['condition'];
-        }
-
-        $whereSql = count($wheres) ? 'WHERE ' . implode(' AND ', $wheres) : '';
-
-        // Подсчёт общего количества
         $stmt = $pdo->prepare("
-            SELECT COUNT(DISTINCT p.id)
-            FROM products p
-            $joins
+            SELECT COUNT(*)
+            FROM products p_outer
             $whereSql
         ");
         $stmt->execute($params);
         $total = $stmt->fetchColumn();
 
-        // Получение товаров
         $stmt = $pdo->prepare("
-            SELECT DISTINCT p.id, p.name, p.price, p.description
-            FROM products p
-            $joins
+            SELECT p_outer.id, p_outer.name, p_outer.price, p_outer.description
+            FROM products p_outer
             $whereSql
             ORDER BY $orderBy
             LIMIT $limit OFFSET $offset
@@ -152,7 +129,7 @@ class ApiController
         $pdo = DB::connect();
         $redis = new RedisCache();
 
-        $filters = $this->getFiltersWithCounts($pdo, $redis); 
+        $filters = $this->getFiltersWithCounts($pdo, $redis);
 
         echo json_encode(array_values($filters));
     }
