@@ -2,7 +2,7 @@
     "name": "1lost/test-ecommerce",
     "autoload": {
         "psr-4": {
-            "1lost\\TestEcommerce\\": "src/"
+            "Src\\": "src/"
         }
     },
     "authors": [
