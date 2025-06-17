@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
 use Src\Parser\XmlProductImporter;
 use Src\Cache\RedisCache;
 
-
 class XmlProductImporterTest extends TestCase
 {
-    public function testImportCallsExpectedDbAndCacheMethods()
+    public function testImportCallsExpectedDbAndCacheMethods(): void
     {
         // Мокаем RedisCache
         $redisMock = $this->createMock(RedisCache::class);
@@ -15,17 +16,18 @@ class XmlProductImporterTest extends TestCase
             ->method('delete')
             ->with('filters_with_counts');
 
-        // Мокаем PDO и PDOStatement
+        // Мокаем PDOStatement
         $stmtMock = $this->createMock(PDOStatement::class);
         $stmtMock->method('execute')->willReturn(true);
         $stmtMock->method('fetchColumn')->willReturn(false);
         $stmtMock->method('fetchAll')->willReturn([]);
 
+        // Мокаем PDO
         $pdoMock = $this->createMock(PDO::class);
         $pdoMock->method('prepare')->willReturn($stmtMock);
         $pdoMock->method('lastInsertId')->willReturn('123');
 
-        // Временный XML
+        // Создаём временный XML-файл
         $xml = <<<XML
 <offers>
     <offer id="1">
@@ -41,9 +43,10 @@ XML;
         $filePath = tempnam(sys_get_temp_dir(), 'xml');
         file_put_contents($filePath, $xml);
 
-        // Анонимный класс с внедрением зависимостей через parent::__construct
-        $importer = new class($pdoMock, $redisMock) extends XmlProductImporter {
-            public function __construct($pdo, $cache)
+        // Анонимный класс с внедрением зависимостей (PDO и RedisCache)
+        $importer = new class($pdoMock, $redisMock) extends XmlProductImporter
+        {
+            public function __construct(PDO $pdo, RedisCache $cache)
             {
                 parent::__construct($pdo, $cache);
             }
@@ -57,8 +60,10 @@ XML;
         };
 
         $importer->import($filePath);
+
+        // Удаляем временный файл
         unlink($filePath);
 
-        $this->assertTrue(true); // если дошло до сюда — тест прошёл
+        $this->assertTrue(true); // Если дошли сюда — тест пройден успешно
     }
 }

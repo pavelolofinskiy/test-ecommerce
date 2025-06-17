@@ -1,31 +1,26 @@
 <?php
+
+declare(strict_types=1);
+
 use PHPUnit\Framework\TestCase;
 use Src\Cache\RedisCache;
 
-
 class RedisCacheTest extends TestCase
 {
-    private $redisMock;
+    private Redis $redisMock;
     private RedisCache $cache;
 
     protected function setUp(): void
     {
-        // Создаём мок Redis
         $this->redisMock = $this->createMock(Redis::class);
-
-        // Чтобы протестировать конструктор, нам нужно "вставить" мок в класс
-        // В твоём коде Redis создаётся внутри конструктора,
-        // поэтому для теста потребуется небольшая доработка класса
-        // (например, внедрение зависимости Redis через конструктор)
     }
 
-    public function testSetCallsRedisSetWithSerializedValue()
+    public function testSetCallsRedisSetWithSerializedValue(): void
     {
         $key = 'test_key';
         $value = ['foo' => 'bar'];
         $ttl = 3600;
 
-        // Мокаем connect, чтобы он успешно "подключался"
         $this->redisMock->expects($this->once())
             ->method('connect')
             ->with('127.127.126.64', 6379)
@@ -44,12 +39,11 @@ class RedisCacheTest extends TestCase
         $cache->set($key, $value, $ttl);
     }
 
-    public function testGetReturnsUnserializedValue()
+    public function testGetReturnsUnserializedValue(): void
     {
         $key = 'test_key';
         $serializedValue = serialize(['foo' => 'bar']);
 
-        // Мокаем connect
         $this->redisMock->expects($this->once())
             ->method('connect')
             ->with('127.127.126.64', 6379)
@@ -66,11 +60,10 @@ class RedisCacheTest extends TestCase
         $this->assertEquals(['foo' => 'bar'], $result);
     }
 
-    public function testGetReturnsNullIfNoData()
+    public function testGetReturnsNullIfNoData(): void
     {
         $key = 'missing_key';
 
-        // Мокаем connect
         $this->redisMock->expects($this->once())
             ->method('connect')
             ->with('127.127.126.64', 6379)
@@ -87,11 +80,10 @@ class RedisCacheTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function testDeleteCallsRedisDel()
+    public function testDeleteCallsRedisDel(): void
     {
         $key = 'delete_key';
 
-        // Мокаем connect
         $this->redisMock->expects($this->once())
             ->method('connect')
             ->with('127.127.126.64', 6379)
