@@ -17,5 +17,25 @@
 1. **Клонируйте репозиторий:**
 
    ```bash
-   git clone https://github.com/yourusername/yourproject.git
-   cd yourproject
+   git clone https://github.com/pavelolofinskiy/test-ecommerce.git
+   cd test-ecommerce
+
+2. **Запустите миграции для создания и обновления структуры базы данных:**
+
+   ```bash
+   php migrate.php
+
+3. **Импортируйте товары из XML:**
+   
+   ```bash
+   php import.php
+
+4. **Запустите встроенный PHP сервер:**
+
+   ```bash
+   php -S localhost:8000 -t public
+
+5. **Откройте в браузере:**
+
+   ```bash
+   localhost:8000/index.html

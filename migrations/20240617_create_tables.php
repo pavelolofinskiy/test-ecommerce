@@ -1,5 +1,4 @@
 <?php
-// Убедись, что переменная $pdo передана из migrate.php
 
 $pdo->exec("
     CREATE TABLE IF NOT EXISTS products (
