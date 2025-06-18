@@ -6,7 +6,7 @@
 
 ## Требования
 
-- PHP >= 7.4 с поддержкой PDO и Redis
+- PHP = 8.1 с поддержкой PDO и Redis
 - MySQL (или MariaDB)
 - Redis сервер
 
