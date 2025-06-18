@@ -38,4 +38,4 @@
 5. **Откройте в браузере:**
 
    ```bash
-   localhost:8000/index.html
+   http://localhost:8000/index.html
